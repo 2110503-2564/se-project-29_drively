@@ -1,0 +1,49 @@
+/* banner.module.css */
+
+.banner {
+    position: relative;
+    height: 100vh; /* Full viewport height */
+    width: 100%;
+}
+
+.bannerText {
+    position: absolute;
+    top: 50%; /* Vertically center */
+    left: 50%; /* Horizontally center */
+    transform: translate(-50%, -50%); /* Offset by 50% of its width and height */
+    text-align: center;
+    z-index: 10;
+    color: white; /* Text color */
+    width: 100%; /* Ensures text doesn't overflow */
+}
+
+.bannerText h1 {
+    font-size: 6rem; /* Significantly larger text */
+    font-weight: 700; /* Bold text */
+    margin-bottom: 10vh; /* Space between h1 and h3 */
+}
+
+.bannerText h3 {
+    font-size: 3rem; /* Significantly larger text for h3 */
+    font-weight: 400; /* Regular weight */
+    margin-top: 0; /* Remove any margin top */
+    margin-bottom: 3vh; /* Space between h3 and button */
+}
+
+.allCarsButton {
+    background-color: white;
+    color: #00B5E2; /* Cyan color */
+    border: 2px solid #00B5E2;
+    font-weight: 600;
+    padding: 12px 25px; /* Slightly larger padding for button */
+    margin-top: 30px; /* Space between the text and the button */
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.allCarsButton:hover {
+    background-color: #00B5E2; /* Change button background color on hover */
+    color: white; /* Change text color on hover */
+}
