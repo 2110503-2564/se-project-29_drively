@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-export default function AddCarPage({ token }: { token: string }) {
+export default function AddCarPage() {
+    const { data: session } = useSession();
+    const router = useRouter();
     const [form, setForm] = useState({
         make: "",
         model: "",
@@ -23,6 +27,11 @@ export default function AddCarPage({ token }: { token: string }) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!session?.user?.token) {
+            setMessage("You must be logged in to add a car");
+            return;
+        }
+        
         setMessage("");
         setLoading(true);
 
@@ -31,7 +40,7 @@ export default function AddCarPage({ token }: { token: string }) {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${session.user.token}`,
                 },
                 body: JSON.stringify({
                     make: form.make,
@@ -48,6 +57,7 @@ export default function AddCarPage({ token }: { token: string }) {
             if (response.ok) {
                 setMessage("Car listing added successfully!");
                 setForm({ make: "", model: "", year: "", rentalPrice: "", available: true });
+                router.push("/car"); // Redirect to car listing page
             } else {
                 setMessage(data.error || "Failed to add car listing.");
             }
@@ -57,6 +67,10 @@ export default function AddCarPage({ token }: { token: string }) {
             setLoading(false);
         }
     };
+
+    if (!session) {
+        return <div className="text-center mt-10">Please sign in to add a car listing.</div>;
+    }
 
     return (
         <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-md rounded">
@@ -111,10 +125,10 @@ export default function AddCarPage({ token }: { token: string }) {
                 </select>
                 <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
                     disabled={loading}
                 >
-                    {loading ? "Submitting..." : "Add Car"}
+                    {loading ? "Adding..." : "Add Car"}
                 </button>
             </form>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 interface Car {
     _id: string;
@@ -22,7 +23,7 @@ const CarPanel: React.FC<CarPanelProps> = ({ cars }) => {
                 <p className="text-center text-gray-500">No cars found.</p>
             ) : (
                 cars.map((car) => (
-                    <div key={car._id} className="border rounded-lg shadow-md p-4">
+                    <div key={car._id} className="border rounded-lg shadow-md p-4 relative">
                         <h2 className="text-lg font-bold">
                             {car.make} {car.model} ({car.year})
                         </h2>
@@ -35,6 +36,14 @@ const CarPanel: React.FC<CarPanelProps> = ({ cars }) => {
                         <p className={car.available ? "text-green-500" : "text-red-500"}>
                             {car.available ? "Available" : "Booked"}
                         </p>
+                        {car.available && (
+                            <Link 
+                                href={`/booking?carModel=${car.model}&make=${car.make}&rentalPrice=${car.rentalPrice}`}
+                                className="absolute bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                            >
+                                Book Now
+                            </Link>
+                        )}
                     </div>
                 ))
             )}
