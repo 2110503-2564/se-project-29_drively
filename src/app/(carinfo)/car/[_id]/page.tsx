@@ -1,20 +1,29 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
+import BookingModal from '@/components/BookingModal';
 
 const CarDetailPage = async ({ params }: { params: { _id: string } }) => {
     const session = await getServerSession(authOptions);
 
+    if (!session?.user) {
+        throw new Error("Please log in to book a car");
+    }
+
+    // Get the token and handle missing token case
+    const token = session.user.token as string;
+    if (!token) {
+        console.error("Missing auth token in session");
+        throw new Error("Authentication token not found. Please log in again.");
+    }
+
     console.log('Fetching car details for ID:', params._id);
     const response = await fetch(`https://back-end-car.vercel.app/api/cars/${params._id}`); // Use absolute URL
     if (!response.ok) {
+        console.error("Error fetching car:", await response.text());
         throw new Error('Failed to fetch car details');
     }
     const carDetail = await response.json();
     console.log('Fetched car details:', carDetail);
-
-    if (!session || !session.user) {
-        throw new Error("User session is not available");
-    }
 
     return (
         <main className="min-h-screen flex flex-col text-center p-10 bg-gray-50 mt-4">
@@ -36,6 +45,13 @@ const CarDetailPage = async ({ params }: { params: { _id: string } }) => {
                         <strong>Status:</strong> {carDetail.available ? "Available" : "Booked"}
                     </div>
                 </div>
+            </div>
+            <div className="mt-8">
+                <BookingModal 
+                    carId={params._id} 
+                    isAvailable={carDetail.available} 
+                    token={token}
+                />
             </div>
         </main>
     );
