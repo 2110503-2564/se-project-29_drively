@@ -8,9 +8,14 @@ export default function RegisterPage() {
     const [form, setForm] = useState({ name: "", email: "", password: "", telephone: "" });
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const [isCarOwner, setIsCarOwner] = useState(false); // State for the checkbox
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setIsCarOwner(e.target.checked);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -19,7 +24,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("https://back-end-car.vercel.app/api/users/register", {
+            const res = await fetch("http://localhost:5003/api/users/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -27,7 +32,7 @@ export default function RegisterPage() {
                     email: form.email,
                     password: form.password,
                     telephone: form.telephone,
-                    role: "user", // Default role
+                    role: isCarOwner ? "car-owner" : "car-renter", // Set role based on checkbox
                 }),
             });
 
@@ -89,6 +94,16 @@ export default function RegisterPage() {
                     className="w-full px-3 py-2 border rounded"
                     required
                 />
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="car-owner"
+                        checked={isCarOwner}
+                        onChange={handleCheckboxChange}
+                        className="mr-2"
+                    />
+                    <label htmlFor="car-owner">I want to be a car rent provider</label>
+                </div>
                 <button
                     type="submit"
                     className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
