@@ -24,6 +24,7 @@ export default async function getUserProfile(token: string) {
         console.log("User profile fetched successfully:", {
             _id: data._id,
             name: data.name,
+            telephone: data.telephone,
             email: data.email,
             role: data.role,
         });
@@ -32,6 +33,7 @@ export default async function getUserProfile(token: string) {
             _id: data._id || "",
             name: data.name || "",
             email: data.email || "",
+            telephone: data.telephone || "",
             role: data.role || "",
             token, // Store the original token
         };
