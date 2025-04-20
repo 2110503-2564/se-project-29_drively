@@ -23,12 +23,21 @@ export default async function TopMenu() {
 
             <TopMenuItem title='Booking' pageRef='/booking' />
             <TopMenuItem title='My Booking' pageRef='/mybooking' />
-            <TopMenuItem title='Provider' pageRef='/provider' />
+            {/* <TopMenuItem title='Provider' pageRef='/provider' /> */}
+            {session?.user?.role === 'car-owner' && (
+                <TopMenuItem title='Add Car' pageRef='/add-car' />
+            )}
+            {session?.user?.role === 'car-owner' && (
+                <TopMenuItem title='My Listings' pageRef='/my-listings' />
+            )}
             {session?.user?.role === 'car-owner' && (
                 <TopMenuItem title='Rental Request' pageRef='/rentalrequests' />
             )}
             {session?.user?.role === 'admin' && (
                 <TopMenuItem title='All Booking' pageRef='/allbooking' />
+            )}
+            {session?.user?.role === 'admin' && (
+                <TopMenuItem title='My Listings' pageRef='/my-listings' />
             )}
             {session ? (
                 <Link href="/api/auth/signout">

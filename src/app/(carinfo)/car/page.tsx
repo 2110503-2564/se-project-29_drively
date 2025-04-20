@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import CarPanel from "@/components/CarPanel";
 
 interface Car {
@@ -23,18 +24,20 @@ export default function CarPage() {
     const [cars, setCars] = useState<Car[]>([]);
     const [loading, setLoading] = useState(false);
     const [carMakes, setCarMakes] = useState<string[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        console.log("🚀 Component mounted. Fetching initial cars...");
         fetchCars();
     }, []);
 
     useEffect(() => {
-        fetchCarMakes();
+        const uniqueMakes = [...new Set(cars.map((car) => car.make))];
+        setCarMakes(uniqueMakes);
     }, [cars]);
 
     async function fetchCars() {
         setLoading(true);
+        setError(null);
         try {
             let url = "https://back-end-car.vercel.app/api/cars/search";
 
@@ -44,31 +47,22 @@ export default function CarPage() {
             if (searchParams.minPrice) params.append("minPrice", searchParams.minPrice);
             if (searchParams.maxPrice) params.append("maxPrice", searchParams.maxPrice);
             if (searchParams.available !== "") {
-                params.append("available", searchParams.available); // ✅ Ensure available filter is passed
+                params.append("available", searchParams.available);
             }
 
             if (params.toString()) url += `?${params.toString()}`;
 
-            console.log("🌐 Fetching from:", url);
-
             const response = await fetch(url);
             if (!response.ok) throw new Error("Failed to fetch cars");
             const data: Car[] = await response.json();
-            console.log("✅ Cars fetched from API:", data);
-
-            // ✅ Only update filteredCars (no need for applyFilters)
             setCars(data);
-        } catch (error) {
-            console.error("❌ Error fetching cars:", error);
+        } catch (err) {
+            console.error("Error fetching cars:", err);
+            setError("Failed to load cars. Please try again later.");
             setCars([]);
         } finally {
             setLoading(false);
         }
-    }
-
-    function fetchCarMakes() {
-        const uniqueMakes = [...new Set(cars.map((car) => car.make))];
-        setCarMakes(uniqueMakes);
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -79,7 +73,6 @@ export default function CarPage() {
     };
 
     const handleSearch = async () => {
-        console.log("🔎 Search button clicked! Fetching cars...");
         await fetchCars();
     };
 
@@ -87,7 +80,6 @@ export default function CarPage() {
         <main className="p-5">
             <h1 className="text-2xl font-bold text-center mb-5">Available Cars</h1>
 
-            {/* 🔍 Search Form */}
             <form className="flex flex-wrap gap-4 justify-center mb-6">
                 <select
                     name="make"
@@ -149,11 +141,31 @@ export default function CarPage() {
                 </button>
             </form>
 
-            {/* 🚗 Car Results */}
+            {error && <p className="text-center text-red-500">{error}</p>}
             {loading ? (
                 <p className="text-center">Loading cars...</p>
             ) : (
-                <CarPanel cars={cars} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {cars.map((car) => (
+                        <Link key={car._id} href={`/car/${car._id}`} legacyBehavior>
+                            <a className="block p-4 border rounded hover:shadow-lg">
+                        
+                                    <h2 className="text-lg font-bold">
+                                        {car.make} {car.model} ({car.year})
+                                    </h2>
+                                    <p className="text-gray-600">
+                                        Rental Price:{" "}
+                                        <span className="text-green-600 font-semibold">
+                                            {car.rentalPrice?.toLocaleString() || "N/A"} THB/day
+                                        </span>
+                                    </p>
+                                    <p className={car.available ? "text-green-500" : "text-red-500"}>
+                                        {car.available ? "Available" : "Booked"}
+                                    </p>
+                            </a>
+                        </Link>
+                    ))}
+                </div>
             )}
         </main>
     );

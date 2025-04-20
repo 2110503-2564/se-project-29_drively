@@ -1,24 +1,23 @@
-/* topmenu.module.css */
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;600&display=swap');
 
 .menucontainer {
     height: 50px;
     background-color: white;
     position: fixed;
-    top: 0px;
-    left: 0px;
-    right: 0px;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 30;
     border-top: 1px solid lightgrey;
     border-bottom: 1px solid lightgrey;
     display: flex;
     flex-direction: row;
-    font-family: 'Lato', sans-serif; /* Apply Lato font */
+    align-items: center;
+    font-family: 'Lato', sans-serif;
 }
 
 .logoimg {
     margin-left: 2vw;
-    margin-top: 1.5vh;
     height: 50%;
     width: auto;
 }
@@ -26,75 +25,74 @@
 .itemcontainer {
     width: 120px;
     text-align: center;
-    margin-top: auto;
-    margin-bottom: auto;
-    font-family: 'Lato', sans-serif; /* Ensure Lato font */
-    font-size: 14px; /* Increase font size for better readability */
+    font-size: 14px;
     color: gray;
-    text-transform: uppercase; /* Optional: adds uppercase styling */
+    text-transform: uppercase;
+    font-family: 'Lato', sans-serif;
 }
 
 .itemcontainer a {
-    color: gray; /* Ensure links inside itemcontainer have the same color */
-    text-decoration: none; /* Remove underline from links */
-    font-weight: 600; /* Optional: make the font bold */
+    color: gray;
+    text-decoration: none;
+    font-weight: 600;
 }
 
 .itemcontainer:hover {
-    color: black; /* Change color on hover if needed */
+    color: black;
 }
 
 .signinRegister {
     position: absolute;
     right: 0;
     display: flex;
-    items-center: center;
-   
+    align-items: center;
     height: 100%;
-    padding-left: 2rem;
-    padding-right: 2rem;
+    padding: 0 2rem;
     font-size: 14px;
-    space-x-4: 4px;
+    gap: 10px;
 }
 
-.signinLink
-{
-    padding-right: 2vw;
-    padding-top: 1.5vh;
-    font-family: 'Lato', sans-serif; /* Ensure Lato font is applied to Sign-In and Register */
-    color: gray; /* Default color for the links */
-    text-decoration: none; /* Remove underline */
-  
-}
+.signinLink,
 .registerLink {
-   
+    font-family: 'Lato', sans-serif;
+    color: gray;
+    text-decoration: none;
     padding-top: 1.5vh;
-    font-family: 'Lato', sans-serif; /* Ensure Lato font is applied to Sign-In and Register */
-    color: gray; /* Default color for the links */
-    text-decoration: none; /* Remove underline */
-  
 }
 
 .signinLink:hover,
 .registerLink:hover {
-    color: black; /* Color on hover */
+    color: black;
 }
 
-.signedInText {
-    padding-right: 2vw;
-    padding-top: 1.5vh;
+.signedInSection {
     position: absolute;
     right: 0;
     top: 0;
+    height: 100%;
     display: flex;
     align-items: center;
+    gap: 10px;
+    padding: 0 2rem;
+}
+
+.signedInText {
     font-size: 14px;
-    color: #00B5E2; /* Cyan color for signed-in text */
-    padding: 10px 2rem;
+    color: #00B5E2;
+    display: flex;
+    align-items: center;
 }
 
 .adminRole {
     margin-left: 1rem;
     font-weight: 600;
     color: gold;
+}
+
+.profileIcon {
+    border-radius: 9999px;
+    cursor: pointer;
+    height: 32px;
+    width: 32px;
+    margin-right: 1vh;
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import styles from "./Booko.module.css";  // Import the CSS module
+import { useSearchParams } from "next/navigation";
+import styles from "./Booko.module.css";
 
 interface Car {
   _id: string;
@@ -19,7 +20,10 @@ interface Provider {
 }
 
 export default function Booko({ token }: { token: string }) {
-  const [carModel, setCarModel] = useState<string>("");
+  const searchParams = useSearchParams();
+  const [carModel, setCarModel] = useState<string>(searchParams.get("carModel") || "");
+  const [carMake, setCarMake] = useState<string>(searchParams.get("make") || "");
+  const [rentalPrice, setRentalPrice] = useState<string>(searchParams.get("rentalPrice") || "");
   const [providerId, setProviderId] = useState<string | null>(null);
   const [pickupDate, setPickupDate] = useState<string>("");
   const [returnDate, setReturnDate] = useState<string>("");
@@ -129,22 +133,41 @@ export default function Booko({ token }: { token: string }) {
       <div className={styles.header}>New Reservation</div>
 
       <div className={styles.formGroup}>
-        <div className={styles.formField}>
-          <label className={styles.label}>Car Model</label>
-          <select
-            name="model"
-            value={carModel}
-            onChange={handleChange}
-            className={styles.select}
-          >
-            <option value="">All Models</option>
-            {carModels.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </select>
-        </div>
+        {carMake && carModel && (
+          <div className={styles.formField}>
+            <label className={styles.label}>Selected Car</label>
+            <input
+              type="text"
+              value={`${carMake} ${carModel}`}
+              className={styles.input}
+              disabled
+            />
+            {rentalPrice && (
+              <p className="text-gray-600 mt-2">
+                Rental Price: <span className="text-green-600 font-semibold">{rentalPrice} THB/day</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {!carModel && (
+          <div className={styles.formField}>
+            <label className={styles.label}>Car Model</label>
+            <select
+              name="model"
+              value={carModel}
+              onChange={handleChange}
+              className={styles.select}
+            >
+              <option value="">All Models</option>
+              {carModels.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className={styles.formField}>
           <label className={styles.label}>Provider Name</label>
