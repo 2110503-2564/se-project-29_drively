@@ -63,11 +63,8 @@ export default function MyListings({ token }: { token: string }) {
     
             if (response.ok) {
                 setSuccessMessage("Car successfully unlisted.");
-                setListings((prevListings) =>
-                    prevListings.map((car) =>
-                        car._id === carId ? { ...car, available: false } : car
-                    )
-                );
+                // Refresh the page after successfully unlisting the car
+                window.location.reload();
             } else {
                 setError(responseData.message || "Failed to unlist the car.");
             }
