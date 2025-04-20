@@ -21,7 +21,7 @@ export default async function TopMenu() {
                 />
             </Link>
 
-            <TopMenuItem title='Booking' pageRef='/booking' />
+            <TopMenuItem title='View Cars' pageRef='/car' />
             <TopMenuItem title='My Booking' pageRef='/mybooking' />
             {/* <TopMenuItem title='Provider' pageRef='/provider' /> */}
             {session?.user?.role === 'car-owner' && (
