@@ -24,7 +24,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("http://localhost:5003/api/users/register", {
+            const res = await fetch("https://back-end-car.vercel.app/api/users/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
