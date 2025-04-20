@@ -23,7 +23,10 @@ export default async function TopMenu() {
 
             <TopMenuItem title='Booking' pageRef='/booking' />
             <TopMenuItem title='My Booking' pageRef='/mybooking' />
-            <TopMenuItem title='Provider' pageRef='/provider' />
+            {/* <TopMenuItem title='Provider' pageRef='/provider' /> */}
+            {session?.user?.role === 'car-owner' && (
+                <TopMenuItem title='Add Car' pageRef='/add-car' />
+            )}
             {session?.user?.role === 'admin' && (
                 <TopMenuItem title='All Booking' pageRef='/allbooking' />
             )}
