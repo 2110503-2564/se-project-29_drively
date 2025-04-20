@@ -17,4 +17,6 @@ export default async function getCars() {
         console.error("Error fetching cars:", error);
         return [];
     }
+
+    
 }
