@@ -26,7 +26,11 @@ export default async function TopMenu() {
             {/* <TopMenuItem title='Provider' pageRef='/provider' /> */}
 
             {session?.user?.role === 'car-owner' && (
-                <TopMenuItem title='Add Car' pageRef='/add-car' />
+                <>
+                    <TopMenuItem title='Add Car' pageRef='/add-car' />
+                    <TopMenuItem title='Car Request' pageRef='/request' />
+                </>
+
             )}
             {session?.user?.role === 'car-owner' && (
                 <TopMenuItem title='My Listings' pageRef='/my-listings' />
