@@ -162,6 +162,14 @@ const ReceivedReservationsPage = () => {
     }
   };
 
+  // Helper to calculate discounted price based on membership tier
+  const getDiscountedPrice = (price: number, membershipTier: string | undefined) => {
+    if (!membershipTier || membershipTier === 'basic') return null;
+    if (membershipTier === 'silver') return Math.round(price * 0.9);
+    if (membershipTier === 'gold') return Math.round(price * 0.85);
+    return null;
+  };
+
   if (loading || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -236,61 +244,88 @@ const ReceivedReservationsPage = () => {
                   </div>
 
                   <ul className="divide-y divide-gray-200">
-                    {filteredReservations.map((reservation) => (
-                      <li key={reservation._id} className="p-4">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                          <div className="mb-4 md:mb-0">
-                            <div className="flex items-center">
-                              <FiUser className="h-5 w-5 text-gray-400" />
-                              <span className="ml-2 font-medium">{reservation.user.name}</span>
-                              <span className={`ml-4 px-2 py-1 text-xs rounded-full ${getStatusColor(reservation.status)}`}>
-                                {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
-                              </span>
-                            </div>
-                            
-                            <div className="mt-2 flex items-center text-sm text-gray-500">
-                              <FiMail className="h-4 w-4 text-gray-400 mr-2" />
-                              {reservation.user.email}
-                            </div>
-                            
-                            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
-                                Pick-up: {formatDate(reservation.pickUpDate)}
+                    {filteredReservations.map((reservation) => {
+                      // If you have access to the user's membershipTier, use it here.
+                      // For now, assume reservation.user.membershipTier exists (add to Reservation type if needed).
+                      // If not available, just show the normal price.
+                      const membershipTier = (reservation.user as any).membershipTier;
+                      const discountedPrice = getDiscountedPrice(car.rentalPrice, membershipTier);
+                      return (
+                        <li key={reservation._id} className="p-4">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div className="mb-4 md:mb-0">
+                              <div className="flex items-center">
+                                <FiUser className="h-5 w-5 text-gray-400" />
+                                <span className="ml-2 font-medium">{reservation.user.name}</span>
+                                <span className={`ml-4 px-2 py-1 text-xs rounded-full ${getStatusColor(reservation.status)}`}>
+                                  {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                                </span>
                               </div>
-                              <div className="flex items-center text-sm text-gray-500">
-                                <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
-                                Return: {formatDate(reservation.returnDate)}
+                              
+                              <div className="mt-2 flex items-center text-sm text-gray-500">
+                                <FiMail className="h-4 w-4 text-gray-400 mr-2" />
+                                {reservation.user.email}
+                              </div>
+                              
+                              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="flex items-center text-sm text-gray-500">
+                                  <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
+                                  Pick-up: {formatDate(reservation.pickUpDate)}
+                                </div>
+                                <div className="flex items-center text-sm text-gray-500">
+                                  <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
+                                  Return: {formatDate(reservation.returnDate)}
+                                </div>
+                              </div>
+
+                              <div className="mt-2 flex items-center text-sm">
+                                <FiShoppingCart className="h-4 w-4 text-gray-400 mr-2" />
+                                {discountedPrice ? (
+                                  <>
+                                    <span className="font-medium text-green-600">฿{reservation.totalPrice}</span>
+                                    <span className="ml-2 text-sm line-through text-gray-500">
+                                      ฿
+                                      {(() => {
+                                        const days =
+                                          (new Date(reservation.returnDate).getTime() -
+                                            new Date(reservation.pickUpDate).getTime()) /
+                                          (1000 * 60 * 60 * 24);
+                                        return Math.round(car.rentalPrice * days);
+                                      })()}
+                                    </span>
+                                    <span className="ml-2 text-xs text-green-700">
+                                      {membershipTier === 'silver' && '10% off (Silver)'}
+                                      {membershipTier === 'gold' && '15% off (Gold)'}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="font-medium">฿{reservation.totalPrice}</span>
+                                )}
                               </div>
                             </div>
 
-                            <div className="mt-2 flex items-center text-sm">
-                              <FiShoppingCart className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="font-medium">฿{reservation.totalPrice}</span>
-                            </div>
+                            {reservation.status === 'pending' && (
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleStatusUpdate(reservation._id, 'accepted')}
+                                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                                >
+                                  <FiCheck className="mr-2" />
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(reservation._id)}
+                                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                                >
+                                  <FiX className="mr-2" />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </div>
-
-                          {reservation.status === 'pending' && (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleStatusUpdate(reservation._id, 'accepted')}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                              >
-                                <FiCheck className="mr-2" />
-                                Accept
-                              </button>
-                              <button
-                                onClick={() => handleDelete(reservation._id)}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-                              >
-                                <FiX className="mr-2" />
-                                Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </li>
-                    ))}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               );

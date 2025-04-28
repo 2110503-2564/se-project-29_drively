@@ -18,9 +18,15 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href={'/'} className="text-xl font-bold text-indigo-600">
-                Drively
-              </Link>
+              {user?.role === 'admin' ? (
+                <Link href={'/dashboard'} className="text-xl font-bold text-indigo-600 flex items-center">
+                  Drively <span className="italic ml-1">admin</span>
+                </Link>
+              ) : (
+                <Link href={'/'} className="text-xl font-bold text-indigo-600">
+                  Drively
+                </Link>
+              )}
             </div>
             {isAuthenticated && (
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -128,9 +134,9 @@ const Navbar = () => {
                 )}
 
                 {/* Admin Navigation */}
-                {user?.role === 'admin' && (
+               {user?.role === 'admin' && (
                   <>
-                    <Link
+                    {/* <Link
                       href="/admin/users"
                       className={`${
                         isActive('/admin/users')
@@ -139,7 +145,7 @@ const Navbar = () => {
                       } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                     >
                       <FiUser className="mr-1" /> Users
-                    </Link>
+                    </Link> */}
                     <Link
                       href="/admin/cars"
                       className={`${
@@ -151,9 +157,9 @@ const Navbar = () => {
                       <FiMapPin className="mr-1" /> Cars
                     </Link>
                     <Link
-                      href="/reservation/all"
+                      href="/admin/reservations"
                       className={`${
-                        isActive('/reservation/all')
+                        isActive('/admin/reservations')
                           ? 'border-indigo-500 text-gray-900'
                           : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                       } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
@@ -161,6 +167,16 @@ const Navbar = () => {
                       <FiCalendar className="mr-1" /> Reservations
                     </Link>
                     <Link
+                      href="/admin/users"
+                      className={`${
+                        isActive('/admin/users')
+                          ? 'border-indigo-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                    >
+                      <FiUser className="mr-1" /> Users
+                    </Link>
+                    {/* <Link
                       href="/admin/statistics"
                       className={`${
                         isActive('/admin/statistics')
@@ -169,7 +185,7 @@ const Navbar = () => {
                       } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                     >
                       <FiBarChart2 className="mr-1" /> Statistics
-                    </Link>
+                    </Link> */}
                   </>
                 )}
               </div>
@@ -183,7 +199,23 @@ const Navbar = () => {
                   className="text-gray-500 hover:text-gray-700 flex items-center"
                 >
                   <FiUser className="mr-1" />
-                  {user?.name} ({user?.role})
+                  {user?.name} ({user?.role}
+                  {user?.membershipTier && user.role === 'car-renter' && (
+                    <span
+                      className={`ml-1 text-xs px-2 py-0.5 rounded border
+                        ${
+                          user.membershipTier === 'gold'
+                            ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                            : user.membershipTier === 'silver'
+                            ? 'bg-blue-100 text-blue-700 border-blue-300'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
+                        }
+                      `}
+                    >
+                      {user.membershipTier.charAt(0).toUpperCase() + user.membershipTier.slice(1)}
+                    </span>
+                  )}
+                  )
                 </Link>
                 <button
                   onClick={() => logout()}

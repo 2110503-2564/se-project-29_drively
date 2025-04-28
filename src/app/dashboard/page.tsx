@@ -36,6 +36,8 @@ interface Car {
   year: number;
   numberPlates: string;
   rentalPrice: number;
+  discountedPrice?: number;
+  discountRate?: number;
   available: boolean;
   createdBy: string;
   ratings: Array<{
@@ -81,6 +83,8 @@ const DashboardPage = () => {
         Promise.all([fetchOwnerReservations(), fetchPopularCars()]);
       } else if (user?.role === 'car-renter') {
         Promise.all([fetchReservations(), fetchSuggestedCars()]);
+      } else if (user?.role === 'admin') {
+        Promise.all([fetchAllReservations(), fetchAllCars()]);
       }
     }
   }, [isAuthenticated, isLoading, router, user?.role]);
@@ -91,6 +95,29 @@ const DashboardPage = () => {
       setMyCars(response.data.data);
     } catch (err) {
       console.error('Error fetching cars:', err);
+    }
+  };
+
+  const fetchAllReservations = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/reservations/all');
+      setReservations(response.data.data);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching all reservations:', err);
+      setError('Failed to load reservations. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllCars = async () => {
+    try {
+      const response = await api.get('/cars');
+      setSuggestedCars(response.data.data);
+    } catch (err) {
+      console.error('Error fetching all cars:', err);
     }
   };
 
@@ -318,6 +345,14 @@ const DashboardPage = () => {
 
   // Car-renter view modifications
   if (user?.role === 'car-renter') {
+    // Helper to calculate discounted price based on membership tier
+    const getDiscountedPrice = (price: number) => {
+      if (!user?.membershipTier || user.membershipTier === 'basic') return null;
+      if (user.membershipTier === 'silver') return Math.round(price * 0.9);
+      if (user.membershipTier === 'gold') return Math.round(price * 0.85);
+      return null;
+    };
+
     return (
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -420,6 +455,153 @@ const DashboardPage = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {suggestedCars.map((car) => {
+                const discountedPrice = getDiscountedPrice(car.rentalPrice);
+                return (
+                  <div key={car._id} className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{car.make} {car.model}</h3>
+                      <div className="mt-2 flex items-center text-sm text-gray-500">
+                        <FiMapPin className="flex-shrink-0 mr-1.5 h-4 w-4" />
+                        <p>Year: {car.year}</p>
+                      </div>
+                      <div className="mt-2 flex items-center text-sm text-gray-500">
+                        <FiUsers className="flex-shrink-0 mr-1.5 h-4 w-4" />
+                        <p>Rating: {car.ratingScore.toFixed(1)} ({car.reviewCount} reviews)</p>
+                      </div>
+                      <div className="mt-2">
+                        {discountedPrice ? (
+                          <div>
+                            <span className="text-gray-500 line-through mr-2">
+                              ฿{car.rentalPrice}
+                            </span>
+                            <span className="text-green-600 font-bold">
+                              ฿{discountedPrice}
+                            </span>
+                            <span className="ml-2 text-xs text-green-700">
+                              {user?.membershipTier === 'silver' && '10% off (Silver)'}
+                              {user?.membershipTier === 'gold' && '15% off (Gold)'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-bold">฿{car.rentalPrice}</span>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/cars/${car._id}`}
+                      className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full justify-center"
+                    >
+                      View Details <FiArrowRight className="ml-1" />
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin view
+  if (user?.role === 'admin') {
+    return (
+      <div className="py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
+          
+          <div className="mt-8">
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg leading-6 font-medium text-gray-900">All Reservations</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      View all reservations in the system
+                    </p>
+                  </div>
+                  <Link href="admin/reservations" className="text-sm text-indigo-600 hover:text-indigo-500">
+                    View all reservations <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+                  <FiCalendar className="mr-2" /> All Reservations
+                </h3>
+                
+                {error && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="text-sm text-red-600">{error}</div>
+                  </div>
+                )}
+                
+                {reservations.length === 0 ? (
+                  <div className="mt-6 text-center text-gray-500 py-4">
+                    <p>No reservations found.</p>
+                  </div>
+                ) : (
+                  <div className="mt-6 overflow-hidden">
+                    <ul className="divide-y divide-gray-200">
+                      {reservations.map((reservation) => (
+                        <li key={reservation._id} className="py-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 bg-indigo-100 rounded-md p-2">
+                                <FiMapPin className="h-6 w-6 text-indigo-600" />
+                              </div>
+                              <div className="ml-4">
+                                <h4 className="text-lg font-medium text-gray-900">
+                                  {reservation.car.make} {reservation.car.model}
+                                </h4>
+                                <div className="mt-1 flex items-center text-sm text-gray-500">
+                                  <FiCalendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                  <p>Pick up: {formatDate(reservation.pickUpDate)}</p>
+                                </div>
+                                <div className="mt-1 flex items-center text-sm text-gray-500">
+                                  <FiClock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                                  <p>Return: {formatDate(reservation.returnDate)}</p>
+                                </div>
+                                <div className="mt-1 flex items-center text-sm text-gray-500">
+                                  <span className="font-medium">Total: ฿{reservation.totalPrice}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                reservation.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : reservation.status === 'accepted'
+                                  ? 'bg-green-100 text-green-800'
+                                  : reservation.status === 'completed'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* All Cars Section */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900">All Cars</h2>
+              <Link href="admin/cars" className="text-sm text-indigo-600 hover:text-indigo-500">
+                View all cars <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {suggestedCars.map((car) => (
                 <div key={car._id} className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
                   <div>
@@ -428,16 +610,29 @@ const DashboardPage = () => {
                       <FiMapPin className="flex-shrink-0 mr-1.5 h-4 w-4" />
                       <p>Year: {car.year}</p>
                     </div>
-                    <div className="mt-2 flex items-center text-sm text-gray-500">
-                      <FiUsers className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                      <p>Rating: {car.ratingScore.toFixed(1)} ({car.reviewCount} reviews)</p>
+                    <div className="mt-2 flex items-center">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <FiStar
+                            key={i}
+                            className={`h-5 w-5 ${
+                              i < Math.round(car.ratingScore)
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="ml-2 text-sm text-gray-500">
+                        ({car.reviewCount} reviews)
+                      </p>
                     </div>
                     <div className="mt-2 flex items-center text-sm text-gray-500">
-                      <span className="font-medium">${car.rentalPrice}/day</span>
+                      <span className="font-medium">฿{car.rentalPrice}/day</span>
                     </div>
                   </div>
                   <Link
-                    href={`/cars/${car._id}`}
+                    href={`/admin/cars/${car._id}`}
                     className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 w-full justify-center"
                   >
                     View Details <FiArrowRight className="ml-1" />

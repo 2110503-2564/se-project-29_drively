@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { FiStar, FiCalendar, FiShoppingCart, FiTruck, FiUser, FiPhone, FiMail, FiFeather, FiAlertCircle } from 'react-icons/fi';
+import React from 'react';
 
 interface Car {
   _id: string;
@@ -35,7 +36,10 @@ interface Car {
   }>;
 }
 
-export default function CarDetailsPage({ params }: { params: { id: string } }) {
+export default function CarDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap params using React.use()
+  const { id } = React.use(params);
+
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [car, setCar] = useState<Car | null>(null);
@@ -47,11 +51,11 @@ export default function CarDetailsPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     fetchCarDetails();
-  }, [params.id]);
+  }, [id]);
 
   const fetchCarDetails = async () => {
     try {
-      const response = await api.get(`/cars/${params.id}`);
+      const response = await api.get(`/cars/${id}`);
       if (response.data.success) {
         setCar(response.data.data);
       }
@@ -85,12 +89,22 @@ export default function CarDetailsPage({ params }: { params: { id: string } }) {
     }
   };
 
+  // Helper to calculate discounted price based on membership tier
+  const getDiscountedPrice = (price: number) => {
+    if (!user?.membershipTier || user.membershipTier === 'basic') return null;
+    if (user.membershipTier === 'silver') return Math.round(price * 0.9);
+    if (user.membershipTier === 'gold') return Math.round(price * 0.85);
+    return null;
+  };
+
   const calculateTotalPrice = () => {
     if (!pickUpDate || !returnDate) return 0;
     const start = new Date(pickUpDate);
     const end = new Date(returnDate);
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return days * (car?.rentalPrice || 0);
+    const discounted = getDiscountedPrice(car?.rentalPrice || 0);
+    const pricePerDay = discounted ?? (car?.rentalPrice || 0);
+    return days * pricePerDay;
   };
 
   if (loading) {
@@ -161,7 +175,22 @@ export default function CarDetailsPage({ params }: { params: { id: string } }) {
                   <FiShoppingCart className="h-5 w-5 text-gray-400 mr-2" />
                   <div>
                     <p className="text-sm text-gray-500">Price per day</p>
-                    <p className="font-medium">฿{car.rentalPrice}</p>
+                    {(() => {
+                      const discounted = getDiscountedPrice(car.rentalPrice);
+                      if (discounted) {
+                        return (
+                          <span>
+                            <span className="text-green-600 font-bold">฿{discounted}</span>
+                            <span className="ml-2 text-gray-400 line-through">฿{car.rentalPrice}</span>
+                            <span className="ml-2 text-xs text-green-700">
+                              {user?.membershipTier === 'silver' && '10% off (Silver)'}
+                              {user?.membershipTier === 'gold' && '15% off (Gold)'}
+                            </span>
+                          </span>
+                        );
+                      }
+                      return <span className="font-medium">฿{car.rentalPrice}</span>;
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -247,8 +276,27 @@ export default function CarDetailsPage({ params }: { params: { id: string } }) {
                       <div className="bg-white rounded-md p-4 mt-4">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Total Price:</span>
-                          <span className="text-xl font-bold">฿{totalPrice}</span>
+                          <span className="text-xl font-bold">
+                            ฿{totalPrice}
+                            {getDiscountedPrice(car.rentalPrice) && (
+                              <span className="ml-2 text-base text-gray-400 line-through">
+                                ฿{(() => {
+                                  if (!pickUpDate || !returnDate) return 0;
+                                  const start = new Date(pickUpDate);
+                                  const end = new Date(returnDate);
+                                  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                                  return days * car.rentalPrice;
+                                })()}
+                              </span>
+                            )}
+                          </span>
                         </div>
+                        {getDiscountedPrice(car.rentalPrice) && (
+                          <div className="text-xs text-green-700 mt-1">
+                            {user?.membershipTier === 'silver' && '10% off (Silver)'}
+                            {user?.membershipTier === 'gold' && '15% off (Gold)'}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -293,7 +341,9 @@ export default function CarDetailsPage({ params }: { params: { id: string } }) {
                   <div key={index} className="border-b border-gray-200 pb-6 last:border-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className="font-medium">{rating.user.name}</div>
+                        <div className="font-medium">
+                          {rating.user && rating.user.name ? rating.user.name : 'Anonymous'}
+                        </div>
                         <div className="ml-4 flex items-center">
                           <FiStar className="text-yellow-400 h-4 w-4" />
                           <span className="ml-1 text-sm text-gray-600">{rating.score}</span>
