@@ -35,7 +35,7 @@ interface FilterState {
 }
 
 const CarsPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -79,6 +79,26 @@ const CarsPage = () => {
   useEffect(() => {
     fetchCars();
   }, [filters, sortBy]);
+
+  
+
+  // Helper to calculate discounted price based on membership tier
+  const getDiscountedPrice = (price: number) => {
+    if (!user?.membershipTier || user.membershipTier === 'basic') return null;
+    if (user.membershipTier === 'silver') return Math.round(price * 0.9);
+    if (user.membershipTier === 'gold') return Math.round(price * 0.85);
+    return null;
+  };
+
+  // Reload the page once when user reaches this page
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!sessionStorage.getItem('carsPageReloaded')) {
+        sessionStorage.setItem('carsPageReloaded', 'true');
+        window.location.reload();
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -226,7 +246,9 @@ const CarsPage = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {cars.map((car) => (
+                {cars.map((car) => {
+                  const discountedPrice = getDiscountedPrice(car.rentalPrice);
+                  return (
                   <div key={car._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
@@ -250,11 +272,15 @@ const CarsPage = () => {
                         </div>
                         <div className="flex items-center text-gray-700">
                           <FiShoppingCart className="h-5 w-5 mr-2" />
-                          <span className="text-lg font-semibold">฿{car.rentalPrice}/day</span>
-                          {car.discountedPrice && (
-                            <span className="ml-2 text-sm line-through text-gray-500">
-                              ฿{car.rentalPrice}
-                            </span>
+                          {discountedPrice ? (
+                            <>
+                              <span className="text-lg font-semibold text-green-600">฿{discountedPrice}/day</span>
+                              <span className="ml-2 text-sm line-through text-gray-500">
+                                ฿{car.rentalPrice}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-lg font-semibold">฿{car.rentalPrice}/day</span>
                           )}
                         </div>
                       </div>
@@ -269,7 +295,7 @@ const CarsPage = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>

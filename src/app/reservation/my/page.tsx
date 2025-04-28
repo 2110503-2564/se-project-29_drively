@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { FiClock, FiCheck, FiX, FiAlertCircle, FiCalendar, FiShoppingCart } from 'react-icons/fi';
+import { FiClock, FiCheck, FiX, FiAlertCircle, FiCalendar, FiShoppingCart, FiStar } from 'react-icons/fi';
 
 interface Car {
   _id: string;
@@ -39,6 +39,11 @@ interface Reservation {
   totalPrice: number;
   status: string;
   createdAt: string;
+  rating?: {
+    score: number;
+    comment: string;
+    createdAt: Date;
+  };
 }
 
 const MyReservationsPage = () => {
@@ -47,6 +52,9 @@ const MyReservationsPage = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Add userRatings state for review system
+  const [userRatings, setUserRatings] = useState<Record<string, any>>({});
+  const [activeStatus] = useState<'all' | 'pending' | 'accepted'>('all');
 
   useEffect(() => {
     if (!isLoading) {
@@ -54,13 +62,12 @@ const MyReservationsPage = () => {
         router.push('/auth/login');
         return;
       }
-      
       if (user?.role !== 'car-renter') {
         router.push('/dashboard');
         return;
       }
-
       fetchMyReservations();
+      fetchUserRatings();
     }
   }, [isAuthenticated, isLoading, user, router]);
 
@@ -78,9 +85,27 @@ const MyReservationsPage = () => {
     }
   };
 
+  // Fetch user ratings for review system
+  const fetchUserRatings = async () => {
+    try {
+      const response = await api.get('/ratings/my/reviews');
+      const ratingsMap = response.data.data.reduce((acc: any, rating: any) => {
+        acc[rating.car._id] = rating;
+        return acc;
+      }, {});
+      setUserRatings(ratingsMap);
+    } catch (err: any) {
+      // Only log error if it's not a 404 (not found)
+      if (err?.response?.status !== 404) {
+        console.error('Error fetching user ratings:', err);
+      }
+      // If 404, just set empty ratings (no reviews yet)
+      setUserRatings({});
+    }
+  };
+
   const handleCancel = async (reservationId: string) => {
     if (!confirm('Are you sure you want to cancel this reservation?')) return;
-
     try {
       await api.delete(`/reservations/${reservationId}`);
       setReservations(reservations.filter(res => res._id !== reservationId));
@@ -88,6 +113,11 @@ const MyReservationsPage = () => {
       console.error('Error canceling reservation:', err);
       setError('Failed to cancel the reservation. Please try again later.');
     }
+  };
+
+  // Review system: handle review button
+  const handleRateReservation = (carId: string) => {
+    router.push(`/my-reviews/add?carId=${carId}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -118,6 +148,51 @@ const MyReservationsPage = () => {
     }
   };
 
+  // Helper to calculate discounted price based on membership tier
+  const getDiscountedPrice = (price: number) => {
+    if (!user?.membershipTier || user.membershipTier === 'basic') return null;
+    if (user.membershipTier === 'silver') return Math.round(price * 0.9);
+    if (user.membershipTier === 'gold') return Math.round(price * 0.85);
+    return null;
+  };
+
+  // Render review button or "Already Reviewed" for accepted reservations
+  const renderRatingSection = (reservation: any) => {
+    if (reservation.status !== 'accepted') {
+      return null;
+    }
+    if (userRatings[reservation.car._id] || reservation.rating) {
+      return (
+        <div className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm rounded-md bg-gray-50 text-gray-600">
+          <FiCheck className="mr-2" />
+          Already Reviewed
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={() => handleRateReservation(reservation.car._id)}
+        className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+      >
+        <FiStar className="mr-2" />
+        Review the Car
+      </button>
+    );
+  };
+
+  // Group reservations by car for review system
+  const groupedReservations = reservations.reduce((groups: { [key: string]: { car: Car; reservations: Reservation[] } }, reservation) => {
+    const carId = reservation.car._id;
+    if (!groups[carId]) {
+      groups[carId] = {
+        car: reservation.car,
+        reservations: []
+      };
+    }
+    groups[carId].reservations.push(reservation);
+    return groups;
+  }, {});
+
   if (loading || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -146,75 +221,114 @@ const MyReservationsPage = () => {
           </div>
         )}
 
-        {reservations.length === 0 ? (
+        {Object.keys(groupedReservations).length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <FiCalendar className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No reservations found</h3>
             <p className="mt-1 text-sm text-gray-500">Start by browsing available cars.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {reservations.map((reservation) => (
-              <div key={reservation._id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {reservation.car.make} {reservation.car.model} ({reservation.car.year})
-                      </h3>
-                      <div className="mt-2 flex items-center">
-                        <span className={`px-2 py-1 text-sm font-medium rounded-full flex items-center ${getStatusColor(reservation.status)}`}>
-                          {getStatusIcon(reservation.status)}
-                          {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-4 md:mt-0">
-                      <div className="flex items-center text-gray-700">
-                        <FiShoppingCart className="h-5 w-5 text-gray-400 mr-1" />
-                        <span className="text-lg font-semibold">฿{reservation.totalPrice}</span>
-                      </div>
-                    </div>
-                  </div>
+          <div className="space-y-8">
+            {Object.entries(groupedReservations).map(([carId, { car, reservations }]) => {
+              const filteredReservations = activeStatus === 'all'
+                ? reservations
+                : reservations.filter(r => r.status === activeStatus);
 
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex items-center">
-                        <FiCalendar className="h-5 w-5 text-gray-400 mr-2" />
-                        <div>
-                          <p className="text-sm text-gray-500">Pick-up Date</p>
-                          <p className="font-medium">
-                            {new Date(reservation.pickUpDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center">
-                        <FiCalendar className="h-5 w-5 text-gray-400 mr-2" />
-                        <div>
-                          <p className="text-sm text-gray-500">Return Date</p>
-                          <p className="font-medium">
-                            {new Date(reservation.returnDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              if (filteredReservations.length === 0) return null;
 
-                  {reservation.status === 'pending' && (
-                    <div className="mt-6">
-                      <button
-                        onClick={() => handleCancel(reservation._id)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700"
-                      >
-                        Cancel Request
-                      </button>
-                    </div>
-                  )}
+              return (
+                <div key={carId} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  <div className="px-4 py-5 sm:px-6 bg-gray-50">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {car.make} {car.model} ({car.year})
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Number Plates: {car.numberPlates}
+                    </p>
+                  </div>
+                  <ul className="divide-y divide-gray-200">
+                    {filteredReservations.map((reservation) => {
+                      const discountedPrice = getDiscountedPrice(reservation.car.rentalPrice);
+                      // Calculate original total price for strike-through if discounted
+                      let originalTotal = reservation.totalPrice;
+                      if (discountedPrice) {
+                        const days =
+                          (new Date(reservation.returnDate).getTime() -
+                            new Date(reservation.pickUpDate).getTime()) /
+                          (1000 * 60 * 60 * 24);
+                        originalTotal = Math.round(
+                          (discountedPrice / (1 - (user?.membershipTier === 'silver' ? 0.1 : 0.15))) * days
+                        );
+                      }
+                      return (
+                        <li key={reservation._id} className="p-4">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div className="mb-4 md:mb-0">
+                              <div className="flex items-center">
+                                <span className={`px-2 py-1 text-xs rounded-full flex items-center ${getStatusColor(reservation.status)}`}>
+                                  {getStatusIcon(reservation.status)}
+                                  {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                                </span>
+                              </div>
+                              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="flex items-center text-sm text-gray-500">
+                                  <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
+                                  Pick-up: {new Date(reservation.pickUpDate).toLocaleDateString()}
+                                </div>
+                                <div className="flex items-center text-sm text-gray-500">
+                                  <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
+                                  Return: {new Date(reservation.returnDate).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div className="mt-2 flex items-center text-sm">
+                                <FiShoppingCart className="h-4 w-4 text-gray-400 mr-2" />
+                                {discountedPrice ? (
+                                  <>
+                                    <span className="font-medium text-green-600">฿{reservation.totalPrice}</span>
+                                    <span className="ml-2 text-base line-through text-gray-500">
+                                      ฿
+                                      {(() => {
+                                        const days =
+                                          (new Date(reservation.returnDate).getTime() -
+                                            new Date(reservation.pickUpDate).getTime()) /
+                                          (1000 * 60 * 60 * 24);
+                                        return Math.round(reservation.car.rentalPrice * days);
+                                      })()}
+                                    </span>
+                                    <span className="ml-2 text-xs text-green-700">
+                                      {user?.membershipTier === 'silver' && '10% off (Silver)'}
+                                      {user?.membershipTier === 'gold' && '15% off (Gold)'}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="font-medium">฿{reservation.totalPrice}</span>
+                                )}
+                              </div>
+                            </div>
+                            {/* Cancel button for pending, review for accepted */}
+                            {reservation.status === 'pending' && (
+                              <div className="mt-6">
+                                <button
+                                  onClick={() => handleCancel(reservation._id)}
+                                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700"
+                                >
+                                  Cancel Request
+                                </button>
+                              </div>
+                            )}
+                            {reservation.status === 'accepted' && (
+                              <div className="mt-6">
+                                {renderRatingSection(reservation)}
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

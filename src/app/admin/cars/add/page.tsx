@@ -7,30 +7,25 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { FiSave, FiX } from 'react-icons/fi';
 
-interface Car {
-  _id: string;
-  make: string;
-  model: string;
-  year: number;
-  numberPlates: string;
-  description: string;
-  rentalPrice: number;
-  color: string;
-  transmission: string;
-  fuelType: string;
-  features: string[];
-  available: boolean;
-}
-
-const EditCarPage = ({ params }: { params: { id: string } }) => {
-  const carId = params.id;
+const AddCarPage = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const [formData, setFormData] = useState<Car | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newFeature, setNewFeature] = useState('');
+  const [formData, setFormData] = useState({
+    make: '',
+    model: '',
+    year: new Date().getFullYear(),
+    numberPlates: '',
+    description: '',
+    rentalPrice: 0,
+    color: '',
+    transmission: '',
+    fuelType: '',
+    features: [] as string[],
+    available: true
+  });
 
   useEffect(() => {
     if (!isLoading) {
@@ -43,28 +38,10 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
         router.push('/dashboard');
         return;
       }
-
-      fetchCarDetails();
     }
-  }, [isAuthenticated, isLoading, user, router, carId]);
-
-  const fetchCarDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/cars/${carId}`);
-      setFormData(response.data.data);
-      setError('');
-    } catch (err) {
-      console.error('Error fetching car details:', err);
-      setError('Failed to load car details. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isAuthenticated, isLoading, user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    if (!formData) return;
-    
     const { name, value, type } = e.target;
     
     if (type === 'checkbox') {
@@ -86,7 +63,7 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
   };
 
   const addFeature = () => {
-    if (!formData || !newFeature.trim()) return;
+    if (!newFeature.trim()) return;
     
     setFormData({
       ...formData,
@@ -96,8 +73,6 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
   };
 
   const removeFeature = (index: number) => {
-    if (!formData) return;
-    
     const newFeatures = [...formData.features];
     newFeatures.splice(index, 1);
     setFormData({
@@ -108,45 +83,23 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData) return;
-    
     setError('');
     setIsSubmitting(true);
 
     try {
-      await api.put(`/cars/${carId}`, formData);
-      router.push(`/admin/cars/${carId}`);
+      const response = await api.post('/cars', formData);
+      router.push(`/admin/cars/${response.data.data._id}`);
     } catch (err: any) {
-      console.error('Error updating car:', err);
-      setError(err.response?.data?.error || 'Failed to update car. Please try again.');
+      console.error('Error creating car:', err);
+      setError(err.response?.data?.error || 'Failed to create car. Please try again.');
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading || loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
-
-  if (!formData) {
-    return (
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Car not found</h3>
-            <div className="mt-6">
-              <Link
-                href="/admin/cars"
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                Back to Cars
-              </Link>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
@@ -157,15 +110,15 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
         <div className="lg:flex lg:items-center lg:justify-between mb-6">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-              Edit Car
+              Add New Car
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Update the details of {formData.make} {formData.model}
+              Add a new car to the system
             </p>
           </div>
           <div className="mt-5 flex lg:mt-0 lg:ml-4">
             <Link
-              href={`/admin/cars/${carId}`}
+              href="/admin/cars"
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               <FiX className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
@@ -405,7 +358,7 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
                 className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <FiSave className="mr-2 -ml-1 h-5 w-5" />
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? 'Creating...' : 'Create Car'}
               </button>
             </div>
           </form>
@@ -415,4 +368,4 @@ const EditCarPage = ({ params }: { params: { id: string } }) => {
   );
 };
 
-export default EditCarPage;
+export default AddCarPage;
