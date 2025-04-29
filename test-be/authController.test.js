@@ -81,5 +81,45 @@ describe('Auth Controller Tests', () => {
     expect(response.status).toBe(200); // คาดหวังว่า status code จะเป็น 200
     expect(response.body).toHaveProperty('token'); // คาดหวังว่า response จะมี token
   });
+  
+  // 5. ทดสอบการเข้าสู่ระบบด้วยข้อมูลไม่ถูกต้อง
+  test('TC5 : should return error for invalid login credentials', async () => {
+    const response = await request(server)
+      .post('/api/v1/auth/login')
+      .send({
+        email: 'carRenterTest@gmail.com',
+        password: '111111'  // รหัสผ่านผิด
+      });
+    expect(response.status).toBe(401);  // คาดหวังว่า status code จะเป็น 401 (การเข้าสู่ระบบไม่สำเร็จ)
+    expect(response.body.error).toBe(undefined);  // ข้อความที่ส่งกลับ
+  });
+
+  // 6. ทดสอบการดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบแล้ว
+  test('TC6 : should get current user profile', async () => {
+    const loginResponse = await request(server)
+      .post('/api/v1/auth/login')
+      .send({
+        email: 'carRenterTest@gmail.com',
+        password: '123456'
+      });
+
+    const token = loginResponse.body.token;
+
+    const response = await request(server)
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200); // คาดหวังว่า status code จะเป็น 200
+    expect(response.body).toHaveProperty('data');  // คาดหวังว่า response.body จะมี `data` แทน `user`
+    expect(response.body.data).toHaveProperty('name', 'CarRenterTest2');  // ชื่อผู้ใช้ต้องตรงกับที่ลงทะเบียน
+  });
+
+  // 7. ทดสอบการดึงข้อมูลผู้ใช้ที่ไม่มี token (ไม่ผ่านการยืนยันตัวตน)
+  test('TC7 : should return error if token is not provided for current user', async () => {
+    const response = await request(server)
+      .get('/api/v1/auth/me');
+    expect(response.status).toBe(401);  // คาดหวังว่า status code จะเป็น 401 (Unauthorized)
+    expect(response.body.error).toBe('Not authorized, no token provided');  // ข้อความที่ส่งกลับ
+  });
 
 });
