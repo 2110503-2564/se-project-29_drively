@@ -52,6 +52,7 @@ const CarsPage = () => {
   });
   const [sortBy, setSortBy] = useState('-createdAt');
   const [showFilters, setShowFilters] = useState(false);
+  const [promotions, setPromotions] = useState<{ title: string; description: string }[]>([]);
 
   const fetchCars = async () => {
     try {
@@ -80,7 +81,29 @@ const CarsPage = () => {
     fetchCars();
   }, [filters, sortBy]);
 
-  
+  // Fetch promotions from backend
+  const fetchPromotions = async () => {
+    try {
+      const res = await api.get('/promotions');
+      if (res.data.success) {
+        setPromotions(res.data.data);
+      }
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
+  useEffect(() => {
+    // Reload the page once when user reaches this page
+    if (typeof window !== 'undefined') {
+      if (!sessionStorage.getItem('carsPageReloaded')) {
+        sessionStorage.setItem('carsPageReloaded', 'true');
+        window.location.reload();
+      }
+    }
+
+    fetchPromotions();
+  }, []);
 
   // Helper to calculate discounted price based on membership tier
   const getDiscountedPrice = (price: number) => {
@@ -90,19 +113,26 @@ const CarsPage = () => {
     return null;
   };
 
-  // Reload the page once when user reaches this page
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!sessionStorage.getItem('carsPageReloaded')) {
-        sessionStorage.setItem('carsPageReloaded', 'true');
-        window.location.reload();
-      }
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Promotion Announce List */}
+        {user?.membershipTier && (user.membershipTier === 'silver' || user.membershipTier === 'gold') && promotions.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold text-indigo-800 mb-2">Announcements & Promotions</h2>
+              <ul className="space-y-2">
+                {promotions.map((promo, idx) => (
+                  <li key={idx} className="text-indigo-900">
+                    <span className="font-bold">{promo.title}</span>
+                    <span className="block text-sm text-indigo-700">{promo.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         <div className="md:flex md:items-center md:justify-between">
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl font-semibold text-gray-900">
