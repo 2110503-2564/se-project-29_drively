@@ -104,6 +104,7 @@ const MembershipDetails = () => {
                 </p>
                 <button
                   onClick={() => handleSubscribe(tier.tier)}
+                  data-testid={`subscribe-${tier.tier}-button`}
                   className={`mt-8 block w-full py-3 px-6 border rounded-md text-center font-medium ${
                     tier.current || isLoading
                       ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
