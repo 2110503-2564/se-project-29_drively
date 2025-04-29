@@ -20,6 +20,7 @@ interface Car {
   available: boolean;
   ratingScore: number;
   discountedPrice?: number;
+  numberPlates?: string; // <-- Add licensePlate property
 }
 
 interface FilterState {
@@ -295,6 +296,15 @@ const CarsPage = () => {
 
                       <p className="text-gray-600 mb-4">{car.year}</p>
                       
+                      {/* License Plate */}
+                      {car.numberPlates && (
+                        <div className="mb-2">
+                          <span className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-semibold">
+                            License Plate: {car.numberPlates}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="space-y-3">
                         <div className="flex items-center text-gray-700">
                           <FiCalendar className="h-5 w-5 mr-2" />

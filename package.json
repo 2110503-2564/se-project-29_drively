@@ -12,7 +12,7 @@
     "axios": "^1.8.4",
     "formik": "^2.4.6",
     "frontend-coworking": "file:",
-    "next": "15.2.3",
+    "next": "^15.3.1",
     "playwright": "^1.52.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
