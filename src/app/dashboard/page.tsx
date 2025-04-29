@@ -69,8 +69,24 @@ const DashboardPage = () => {
   const [myCars, setMyCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [promotions, setPromotions] = useState<{ title: string; description: string }[]>([]);
   const router = useRouter();
   const MAX_SUGGESTED_SPACES = 3;
+
+  // Fetch promotions from backend
+  useEffect(() => {
+    const fetchPromotions = async () => {
+      try {
+        const res = await api.get('/promotions');
+        if (res.data.success) {
+          setPromotions(res.data.data);
+        }
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    fetchPromotions();
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -185,6 +201,25 @@ const DashboardPage = () => {
     );
   }
 
+  // Promotion Announce List Component
+  const PromotionList = () => (
+    user?.membershipTier && (user.membershipTier === 'silver' || user.membershipTier === 'gold') && promotions.length > 0 ? (
+      <div className="mb-6">
+        <div className="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold text-indigo-800 mb-2">Announcements & Promotions</h2>
+          <ul className="space-y-2">
+            {promotions.map((promo, idx) => (
+              <li key={idx} className="text-indigo-900">
+                <span className="font-bold">{promo.title}</span>
+                <span className="block text-sm text-indigo-700">{promo.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    ) : null
+  );
+
   if (user?.role === 'car-owner') {
     // Sort all reservations by date, pending first
     const sortedReservations = ownerReservations
@@ -199,6 +234,7 @@ const DashboardPage = () => {
     return (
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PromotionList />
           <h1 className="text-2xl font-semibold text-gray-900">Owner Dashboard</h1>
           
           {/* Rental Requests Section */}
@@ -356,6 +392,7 @@ const DashboardPage = () => {
     return (
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PromotionList />
           <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
           
           <div className="mt-8">
@@ -467,7 +504,9 @@ const DashboardPage = () => {
                       </div>
                       <div className="mt-2 flex items-center text-sm text-gray-500">
                         <FiUsers className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                        <p>Rating: {car.ratingScore.toFixed(1)} ({car.reviewCount} reviews)</p>
+                        <p>
+                          Rating: {typeof car.ratingScore === 'number' ? car.ratingScore.toFixed(1) : '0.0'} ({car.reviewCount} reviews)
+                        </p>
                       </div>
                       <div className="mt-2">
                         {discountedPrice ? (
@@ -509,6 +548,7 @@ const DashboardPage = () => {
     return (
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PromotionList />
           <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
           
           <div className="mt-8">
@@ -650,6 +690,7 @@ const DashboardPage = () => {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PromotionList />
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
         
         <div className="mt-8">
