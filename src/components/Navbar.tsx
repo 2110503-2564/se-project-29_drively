@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
 import { FiHome, FiCalendar, FiMapPin, FiUser, FiLogOut, FiStar, FiMessageCircle, FiSettings, FiDollarSign, FiBarChart2 } from 'react-icons/fi';
+import { FiTag } from 'react-icons/fi'; // Add this import for a promotion icon
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -175,6 +176,16 @@ const Navbar = () => {
                       } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
                     >
                       <FiUser className="mr-1" /> Users
+                    </Link>
+                    <Link
+                      href="/admin/promotions"
+                      className={`${
+                        isActive('/admin/promotions')
+                          ? 'border-indigo-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                    >
+                      <FiTag className="mr-1" /> Promotion Management
                     </Link>
                     {/* <Link
                       href="/admin/statistics"
