@@ -20,6 +20,7 @@ interface Car {
   features: string[];
   available: boolean;
   ratingScore: number;
+  numberPlates?: string; // <-- Add licensePlate property
   createdBy: {
     _id: string;
     name: string;
@@ -50,7 +51,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
   const [reservationError, setReservationError] = useState('');
 
   useEffect(() => {
-    fetchCarDetails();
+    fetchCarDetails(); // Fetch car details when id changes
   }, [id]);
 
   const fetchCarDetails = async () => {
@@ -82,14 +83,14 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
       });
 
       if (response.data.success) {
-        router.push('/reservation/my');
+        router.push('/reservation/my'); // Redirect to user's reservations
       }
     } catch (error: any) {
       setReservationError(error.response?.data?.error || 'Failed to create reservation');
     }
   };
 
-  // Helper to calculate discounted price based on membership tier
+  // Calculate discounted price based on membership tier
   const getDiscountedPrice = (price: number) => {
     if (!user?.membershipTier || user.membershipTier === 'basic') return null;
     if (user.membershipTier === 'silver') return Math.round(price * 0.9);
@@ -97,7 +98,8 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
     return null;
   };
 
-  const calculateTotalPrice = () => {
+  // Calculate total price based on rental period and membership discount
+  const calculateTotalPrice = () => { 
     if (!pickUpDate || !returnDate) return 0;
     const start = new Date(pickUpDate);
     const end = new Date(returnDate);
@@ -131,7 +133,7 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const totalPrice = calculateTotalPrice();
+  const totalPrice = calculateTotalPrice(); // Calculate total rental price
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -162,6 +164,15 @@ export default function CarDetailsPage({ params }: { params: Promise<{ id: strin
                 <h2 className="text-xl font-semibold mb-4">About this car</h2>
                 <p className="text-gray-600">{car.description}</p>
               </div>
+
+              {/* License Plate */}
+              {car.numberPlates && (
+                <div className="mb-4">
+                  <span className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm font-semibold">
+                    License Plate: {car.numberPlates}
+                  </span>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="flex items-center">
