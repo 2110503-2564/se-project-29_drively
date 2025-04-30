@@ -20,6 +20,8 @@ const ProfilePage = () => {
   });
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [renewLoading, setRenewLoading] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
 
   // Membership expiry and countdown logic
   const expiryDate = user?.membershipExpiryDate ? new Date(user.membershipExpiryDate) : null;
@@ -32,6 +34,14 @@ const ProfilePage = () => {
     const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
     const minutes = Math.floor((diff / (1000 * 60)) % 60);
     return `${days}d ${hours}h ${minutes}m`;
+  }, [expiryDate, now]);
+
+  // Calculate days left for expiry notification
+  const daysLeft = useMemo(() => {
+    if (!expiryDate) return null;
+    const diff = expiryDate.getTime() - now.getTime();
+    if (diff <= 0) return 0;
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
   }, [expiryDate, now]);
 
   const handleUpgradeMembership = () => {
@@ -120,6 +130,23 @@ const ProfilePage = () => {
     }
   };
 
+  const handleRenewMembership = async () => {
+    setRenewLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await api.post('/membership/renew');
+      if (response.data.success) {
+        updateUser(response.data.data);
+        setShowRenewModal(true); // Show confirmation modal
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to renew membership');
+    } finally {
+      setRenewLoading(false);
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -130,6 +157,42 @@ const ProfilePage = () => {
 
   return (
     <div className="py-6">
+      {/* Expiry Notification */}
+      {user?.role === 'car-renter' && expiryDate && daysLeft !== null && daysLeft <= 10 && daysLeft > 0 && (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+          <div className="flex items-center bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">
+            <FiAlertTriangle className="mr-2 text-yellow-500" size={20} />
+            <span>
+              Your membership will expire in <b>{daysLeft} day{daysLeft !== 1 ? 's' : ''}</b>. Please renew to keep your benefits.
+            </span>
+          </div>
+        </div>
+      )}
+      {/* Renew Confirmation Modal */}
+      {showRenewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <div className="flex items-center mb-4">
+              <FiCalendar className="text-green-500 mr-2" size={24} />
+              <span className="font-semibold text-lg">Membership Renewed</span>
+            </div>
+            <p className="mb-4 text-gray-700">
+              Your membership has been successfully renewed!
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setShowRenewModal(false);
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Confirmation Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
@@ -328,15 +391,11 @@ const ProfilePage = () => {
                           <div className="flex flex-wrap gap-2 mt-2">
                             {showRenew && (
                               <button
-                                onClick={handleUpgradeMembership}
-                                className={`px-4 py-2 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                  expiryDate && expiryDate > new Date()
-                                    ? 'bg-gray-300 cursor-not-allowed'
-                                    : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
-                                }`}
-                                disabled={!!(expiryDate && expiryDate > new Date())}
+                                onClick={handleRenewMembership}
+                                className={`px-4 py-2 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 bg-green-600 hover:bg-green-700 focus:ring-green-500`}
+                                disabled={renewLoading}
                               >
-                                Renew Membership
+                                {renewLoading ? 'Renewing...' : 'Renew Membership'}
                               </button>
                             )}
                             {showUpgrade && (

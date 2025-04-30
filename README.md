@@ -1,6 +1,6 @@
-# Co-Working Space Reservation Frontend
+# Car Reservation Frontend
 
-This is the frontend for the Co-working Space Reservation System, built with Next.js, TypeScript, and Tailwind CSS.
+This is the frontend for the Car Reservation System, built with Next.js, TypeScript, and Tailwind CSS.
 
 ## Features
 
